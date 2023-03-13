@@ -28,15 +28,17 @@ def show_board(board):
     for row in board: #確認！！！！！！！
         print(*[int2stone(i) for i in row]) #int2stone関数から条件を受け取り代入し表示　確認！！！！！！
     
-#横軸でリーバス可能なマスを表示
-def reversible_stones(board, x, y) -> list:
-    right_stones = reversible_right_stones(board=board, x=x, y=y)
-    left_stones = reversible_left_stones(board=board, x=x, y=y)
-    return right_stones + left_stones
+#横軸でリーバス可能なマス
+def reversible_stones(board, x, y, player) -> list:
+    right_stones = reversible_right_stones(board=board, x=x, y=y, player=player)
+    left_stones = reversible_left_stones(board=board, x=x, y=y, player=player)
+    upper_stones = reversible_upper_stones(board=board, x=x, y=y, player=player)
+    bottom_stones = reversible_bottom_stones(board=board, x=x, y=y, player=player)
+    return right_stones + left_stones + upper_stones + bottom_stones
 
 #リバース可能な値を表示
-def show_reversible_stones(board, x, y):
-    stones = reversible_stones(board=board, x=x, y=y)
+def show_reversible_stones(board, x, y, player):
+    stones = reversible_stones(board=board, x=x, y=y, player=player)
     return stones
 
 #入力値の正誤ジャッチ
@@ -51,7 +53,7 @@ def judge_input(board, x, y) -> tuple:
             return (x, y)
 
 #入力(x,y)の正誤ジャッジ&正しい入力を返す関数
-def judge_input_stone(board) -> tuple:
+def judge_input_stone(board, player) -> tuple:
     while True:
         print('下記からマスを選択してください。')
         # stones = show_reversible_stones(board=board, x=x, y=y)
@@ -73,7 +75,7 @@ def judge_input_stone(board) -> tuple:
             print("既に石が存在します。") 
 
         #リバースできる石が無い場合
-        elif not reversible_stones(board=board, x=x, y=y):
+        elif not reversible_stones(board=board, x=x, y=y, player=player):
             show_board(board=board)
             print("リバースできる石がありません。") 
 
@@ -82,70 +84,94 @@ def judge_input_stone(board) -> tuple:
             return (x, y)
 
 #player1が石を置く関数
-def put(board, x, y):
-    board[y][x] = 1
+def put(board, x, y, player):
+    board[y][x] = player
 
 #player1が置いた場合にリバースできる石をリスト化(x方向:右)
-def reversible_right_stones(board, x, y) -> list:
-    list = [] #空リスト作成
+def reversible_right_stones(board, x, y, player) -> list:
+    stones = [] #空リスト作成
     stone_position = x #置いた石のx座標の値を取得
-    while stone_position+1 < 8: #置いた位置から右へ移動しながら判定する
-        if board[y][stone_position+1] == 1: #自分の石に当たったら、以降の処理を中断
+    while stone_position+1 <= 8: #置いた位置から右へ移動しながら判定する
+        if board[y][stone_position+1] == player: #自分の石に当たったら、以降の処理を中断
             break
         elif board[y][stone_position+1] == 0: #もしも空だった場合
             break
-        elif board[y][stone_position+1] == 2: #もしも相手の石だった場合
-            list.append([y, stone_position+1])
+        elif board[y][stone_position+1] != player: #もしも相手の石だった場合
+            stones.append([stone_position+1, y])
         stone_position += 1
-    return list #リストを返す
+    print('右リスト',stones)
+    return stones #リストを返す
 
 #置いた場合にリバースできる石をリスト化(x方向:左)
-def reversible_left_stones(board, x, y) -> list:
-    list = [] #空リスト作成
+def reversible_left_stones(board, x, y, player) -> list:
+    stones = [] #空リスト作成
     stone_position = x #置いた石のx座標の値を取得
-    while stone_position-1 > 0: #置いた位置から右へ移動しながら判定する
-        if board[y][stone_position-1] == 1: #自分の石に当たったら、以降の処理を中断
+    while stone_position-1 >= 0: #置いた位置から右へ移動しながら判定する
+        if board[y][stone_position-1] == player: #自分の石に当たったら、以降の処理を中断
             break
         elif board[y][stone_position-1] == 0: #もしも空だった場合
             break
-        elif board[y][stone_position-1] == 2: #もしも相手の石だった場合
-            list.append([y, stone_position-1])
-
+        elif board[y][stone_position-1] != player: #もしも相手の石だった場合
+            stones.append([stone_position-1, y])
         stone_position -= 1
-    return list #リストを返す
+    print('左リスト',stones)
+    return stones #リストを返す
+
+
+
+#player1が置いた場合にリバースできる石をリスト化(y方向:上)
+def reversible_upper_stones(board, x, y, player) -> list:
+    stones = [] #空リスト作成
+    stone_position = y #置いた石のy座標の値を取得
+
+    while board[stone_position-1][x] != player and board[stone_position-2][x] == player : #置いた位置から下へ移動しながら判定する #次のマスを探索して相手の石があり続ける限り       
+            stones.append([x, stone_position-1])   
+            stone_position -= 1
+            print('下リスト',stones)
+    return stones #リストを返す
+
+#1. 着手した石の周囲8方向に対して、隣接する石が相手の石である場合に限り、その方向に進みながら相手の石を探索します。この探索を繰り返して、相手の石が続いている限り進みます。
+
+#置いた場合にリバースできる石をリスト化(y方向:下)
+def reversible_bottom_stones(board, x, y, player) -> list:
+    stones = [] #空リスト作成
+    stone_position = y #置いた石のy座標の値を取得
+    while board[stone_position+1][x] != player and board[stone_position+2][x] == player : #置いた位置から下へ移動しながら判定する #次のマスを探索して相手の石があり続ける限り       
+            stones.append([x, stone_position+1])   
+            stone_position += 1
+            print('下リスト',stones)
+    return stones #リストを返す
 
 #石をリバースする関数
-def reverse_stones(board, x, y): 
-    for stone in reversible_stones(board=board, x=x, y=y): #for文でリバースできる石のリストから順に石をひっくり返す
-        board[stone[0]][stone[1]] = 1 #石をリバースする
+def reverse_stones(board, x, y, player): 
+    stones = reversible_stones(board=board, x=x, y=y, player=player)
+    for stone in stones: #for文でリバースできる石のリストから順に石をひっくり返す
+        x_position = stone[0]
+        y_position = stone[1] 
+        board[y_position][x_position] = player #石をリバースする
 
 #メイン関数（実行）
 def main():
     board = create_board()
 
-    player = 1
+    player = 2
     while True:
         #show_board関数実行（キーワード引数活用）
         show_board(board=board) 
 
-        print("player",player,"の手番です。")
-        player = switch_player(player)
 
+        player = switch_player(player)
+        print("player",player,"の手番です。")
         #palyer1が置いた石の正誤ジャッジ&正しい入力を返す関数の実行
-        x, y = judge_input_stone(board=board)
+        x, y = judge_input_stone(board=board, player=player)
 
         #player1が石を置く関数の実行
-        put(board=board, x=x, y=y)
+        put(board=board, x=x, y=y, player=player)
 
         #player1が石をリバースする関数の実行
-        reversible_right_list = reversible_right_stones(board=board, x=x, y=y) #返り値を変数に代入する
-        reverse_stones(board=board, reversible_stones=reversible_right_list, x=x, y=y) #関数の返り値を引用する際は、変数に格納してからそれを引数とする
-    
-        reversible_left_list = reversible_left_stones(board=board, x=x, y=y) #返り値を変数に代入する
-        reverse_stones(board=board, reversible_stones=reversible_left_list, x=x, y=y) #関数の返り値を引用する際は、変数に格納してからそれを引数とする
+        reverse_stones(board=board, x=x, y=y, player=player) #関数の返り値を引用する際は、変数に格納してからそれを引数とする
 
-        #リバース後のボードを表示する関数の実行
-        show_board(board=board)
+        print("---player change!---")
 
 if __name__ == '__main__':
     main()
@@ -157,3 +183,21 @@ if __name__ == '__main__':
 #繰り返しをなるべくなくす
 #文字列など入力した場合、例外処理してあげる　✓
 #置けない（１，４）に置けてしまうt　✓
+
+#縦と斜めのリバース可能な石を探索したい
+
+
+#player1が置いた場合にリバースできる石をリスト化(y方向:上)
+def reversible_upper_stones(board, x, y, player) -> list:
+    stones = [] #空リスト作成
+    stone_position = y #置いた石のy座標の値を取得
+    while stone_position-1 >= 0: #置いた位置から上へ移動しながら判定する
+        if board[stone_position-1][x] == player: #自分の石に当たったら、以降の処理を中断
+            break
+        elif board[stone_position-1][x] == 0: #もしも空だった場合
+            break
+        elif board[stone_position-1][x] != player and board[stone_position-2][x] == player: #もしも相手の石だった場合
+            stones.append([x, stone_position-1])
+        stone_position -= 1
+        print('上リスト',stones)
+    return stones #リストを返す
